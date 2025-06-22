@@ -1,0 +1,46 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.table {
+    margin-top: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-control {
+    margin-bottom: 10px;
+}
+
+.btn {
+    margin-right: 10px;
+}
+
+#folderList {
+    border: 1px solid #ccc;
+    padding: 5px;
+    min-height: 50px;
+}
+#folderList .folderItem {
+    padding: 5px;
+    margin: 2px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    cursor: move;
+}

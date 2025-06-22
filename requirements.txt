@@ -1,4 +1,4 @@
+Flask
 openpyxl
-tqdm
-Pillow
 imagehash
+Pillow

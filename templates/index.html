@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duplicate File Manager</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <style>
+        /* Style for the draggable folder list */
+        #folderList {
+            border: 1px solid #ccc;
+            padding: 5px;
+            min-height: 50px;
+        }
+        #folderList .folderItem {
+            padding: 5px;
+            margin: 2px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            cursor: move;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Duplicate File Manager</h1>
+
+        <div class="form-group">
+            <label for="rootDirectory">Root Directory:</label>
+            <input type="text" class="form-control" id="rootDirectory" placeholder="Enter root directory">
+            <button class="btn btn-primary" onclick="setRootDirectory()">Set Directory</button>
+        </div>
+
+        <div>
+            <label>Drag and Drop Folder Priority:</label>
+            <div id="folderList">
+                <!-- Folder list will be populated here -->
+            </div>
+            <button class="btn btn-info" onclick="applyFolderPriority()">Apply Priority</button>
+        </div>
+
+        <button class="btn btn-success" onclick="listFiles()">List Files and Find Duplicates</button>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>File Name</th>
+                    <th>Directory Path</th>
+                    <th>Preview</th>
+                    <th>File Size (bytes)</th>
+                    <th>Last Modified</th>
+                    <th>Duplicate Group</th>
+                    <th>Keep</th>
+                    <th>Delete</th>
+                </tr>
+            </thead>
+            <tbody id="fileTableBody">
+            </tbody>
+        </table>
+
+        <button class="btn btn-danger" onclick="deleteFiles()">Delete Marked Files</button>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script>
+        let fileList = [];
+
+        function setRootDirectory() {
+            const rootDirectory = $('#rootDirectory').val();
+            $.ajax({
+                url: '/set_root_directory',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ rootDirectory: rootDirectory }),
+                success: function (response) {
+                    alert(response.message);
+                },
+                error: function (error) {
+                    console.error('Error setting root directory:', error);
+                }
+            });
+        }
+
+        function listFiles() {
+            $.ajax({
+                url: '/list_files',
+                type: 'GET',
+                success: function (response) {
+                    if (response.status === 'success') {
+                        fileList = response.file_list;
+                        populateTable(fileList);
+                        populateFolderList(fileList); // Populate folder list
+                    } else {
+                        alert(response.message);
+                    }
+                },
+                error: function (error) {
+                    console.error('Error listing files:', error);
+                }
+            });
+        }
+
+        function populateTable(fileList) {
+            const tableBody = $('#fileTableBody');
+            tableBody.empty();
+
+            fileList.forEach(function (file, index) {
+                const row = `
+                    <tr>
+                        <td>${file["File Name"]}</td>
+                        <td>${file["Directory Path"]}</td>
+                        <td><img src="/get_image/${file["File Path"]}" alt="Preview" style="width: 50px; height: 50px;"></td>
+                        <td>${file["File Size (bytes)"]}</td>
+                        <td>${file["Last Modified"]}</td>
+                        <td>${file["Duplicate Group"] || ''}</td>
+                        <td>
+                            <select class="form-control" id="keep-${index}" onchange="updateFile('${file["File Path"]}')">
+                                <option value="Yes" ${file["Keep"] === "Yes" ? "selected" : ""}>Yes</option>
+                                <option value="No" ${file["Keep"] === "No" ? "selected" : ""}>No</option>
+                            </select>
+                        </td>
+                        <td>
+                            <select class="form-control" id="delete-${index}" onchange="updateFile('${file["File Path"]}')">
+                                <option value="Yes" ${file["Delete"] === "Yes" ? "selected" : ""}>Yes</option>
+                                <option value="No" ${file["Delete"] === "No" ? "selected" : ""}>No</option>
+                            </select>
+                        </td>
+                    </tr>
+                `;
+                tableBody.append(row);
+            });
+        }
+
+        function updateFile(filePath) {
+            const index = fileList.findIndex(file => file["File Path"] === filePath);
+            const keepValue = $(`#keep-${index}`).val();
+            const deleteValue = $(`#delete-${index}`).val();
+
+            $.ajax({
+                url: '/update_file',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ filePath: filePath, keep: keepValue, delete: deleteValue }),
+                success: function (response) {
+                    console.log(response.message);
+                },
+                error: function (error) {
+                    console.error('Error updating file:', error);
+                }
+            });
+        }
+
+        function populateFolderList(fileList) {
+            const folderListDiv = $('#folderList');
+            folderListDiv.empty();
+            const folders = [...new Set(fileList.map(file => file["Directory Path"]))]; // Get unique folders
+
+            folders.forEach(folder => {
+                const folderItem = `<div class="folderItem" data-folder="${folder}">${folder}</div>`;
+                folderListDiv.append(folderItem);
+            });
+
+            // Make the folder list sortable
+            $("#folderList").sortable({
+                cursor: "move"
+            });
+            $("#folderList").disableSelection();
+        }
+
+        function applyFolderPriority() {
+            const priorityFolders = $('#folderList .folderItem').map(function(){
+                return $(this).data('folder');
+            }).get();
+
+            $.ajax({
+                url: '/apply_folder_priority',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ priorityFolders: priorityFolders }),
+                success: function (response) {
+                    alert(response.message);
+                    listFiles(); // Refresh the file list after applying priority
+                },
+                error: function (error) {
+                    console.error('Error applying folder priority:', error);
+                }
+            });
+        }
+
+        function deleteFiles() {
+            $.ajax({
+                url: '/delete_files',
+                type: 'GET',
+                success: function (response) {
+                    alert(response.message);
+                    listFiles(); // Refresh the file list after deleting
+                },
+                error: function (error) {
+                    console.error('Error deleting files:', error);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
