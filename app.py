@@ -17,7 +17,7 @@ def list_files_and_find_duplicates(root_dir, excel_file, similarity_threshold=5)
 
     workbook = openpyxl.Workbook()
     sheet = workbook.active
-    header = ["File Name", "Directory Path", "File Path", "File Size (bytes)", "Last Modified", "Duplicate Group", "Keep", "Delete"]
+    header = ["File Name", "Directory Path", "File Path", "File Size (bytes)", "Last Modified", "Duplicate Group", "Delete"] # Remove "Keep"
     sheet.append(header)
 
     file_data = []  # Store file data before writing
@@ -61,9 +61,7 @@ def list_files_and_find_duplicates(root_dir, excel_file, similarity_threshold=5)
                         relative_path = os.path.relpath(directory_path, root_dir)
                         shortened_path = "./" if relative_path == "." else os.path.join("./", relative_path)
 
-
-
-                        file_data.append([file_name, shortened_path, filepath, file_size, modified_time, None, "No", "No"])  # Append to file_data
+                        file_data.append([file_name, shortened_path, filepath, file_size, modified_time, None, "No"])  # Append to file_data with "No" for delete
                     except FileNotFoundError:
                         print(f"Warning: File not found: {filepath}")
                         directory_path, file_name = os.path.split(filepath)  # split the paths
@@ -71,7 +69,7 @@ def list_files_and_find_duplicates(root_dir, excel_file, similarity_threshold=5)
                         relative_path = os.path.relpath(directory_path, root_dir)
                         shortened_path = "./" if relative_path == "." else os.path.join("./", relative_path)
 
-                        file_data.append([file_name, shortened_path, filepath, "N/A", "N/A", None, "No", "No"])
+                        file_data.append([file_name, shortened_path, filepath, "N/A", "N/A", None,  "No"])
                     except OSError as e:
                         print(f"Warning: Error accessing file {filepath}: {e}")
                         directory_path, file_name = os.path.split(filepath)  # split the paths
@@ -79,7 +77,7 @@ def list_files_and_find_duplicates(root_dir, excel_file, similarity_threshold=5)
                         relative_path = os.path.relpath(directory_path, root_dir)
                         shortened_path = "./" if relative_path == "." else os.path.join("./", relative_path)
 
-                        file_data.append([file_name, shortened_path, filepath, "N/A", "N/A", None, "No", "No"])
+                        file_data.append([file_name, shortened_path, filepath, "N/A", "N/A", None, "No"])
                     except Exception as e:
                         print(f"Warning: An unexpected error occurred processing {filepath}: {e}")
                         directory_path, file_name = os.path.split(filepath)  # split the paths
@@ -87,17 +85,17 @@ def list_files_and_find_duplicates(root_dir, excel_file, similarity_threshold=5)
                         relative_path = os.path.relpath(directory_path, root_dir)
                         shortened_path = "./" if relative_path == "." else os.path.join("./", relative_path)
 
-                        file_data.append([file_name, shortened_path, filepath, "N/A", "N/A", None, "No", "No"])
+                        file_data.append([file_name, shortened_path, filepath, "N/A", "N/A", None, "No"])
                 else:
                     directory_path, file_name = os.path.split(filepath) # split the paths
                     # Shorten the directory path to be relative to root_dir
                     relative_path = os.path.relpath(directory_path, root_dir)
                     shortened_path = "./" if relative_path == "." else os.path.join("./", relative_path)
 
-                    file_data.append([file_name, shortened_path, filepath, "N/A", "N/A", None, "No", "No"])  # Append to file_data (handles non-image or video)
+                    file_data.append([file_name, shortened_path, filepath, "N/A", "N/A", None, "No"])  # Append to file_data (handles non-image or video)
                 pbar.update(1)
 
-    # Assign group numbers and 'Keep' values
+    # Assign group numbers
     grouped_files = []
     unique_files = []
     group_counter = 1
@@ -111,12 +109,14 @@ def list_files_and_find_duplicates(root_dir, excel_file, similarity_threshold=5)
         else:  # Unique file
             for item in file_data:
                 if item[2] == file_list[0]:  # item[2] is the File Path
-                    item[4] = "Yes"  # Set 'Keep' to 'Yes'
                     unique_files.append(item)
 
     # Write grouped files first, then unique files
     for row in grouped_files:
         sheet.append(row)
+    # Add a blank row as a visual separator
+    if grouped_files and unique_files:  # Only add separator if both groups exist
+        sheet.append(["", "", "", "", "", "", ""]) # Empty row
     for row in unique_files:
         sheet.append(row)
 
@@ -162,8 +162,7 @@ def get_file_list_from_excel(excel_file):
                 "File Size (bytes)": row[3],
                 "Last Modified": row[4],
                 "Duplicate Group": row[5],
-                "Keep": row[6],
-                "Delete": row[7]
+                "Delete": row[6] # Now only one column
             })
     return file_list
 
@@ -175,7 +174,7 @@ def save_file_list_to_excel(excel_file, file_list):
         sheet = workbook.active
 
         # Write header row
-        header = list(file_list[0].keys()) if file_list else ["File Name", "Directory Path", "File Path", "File Size (bytes)", "Last Modified", "Duplicate Group", "Keep", "Delete"]
+        header = list(file_list[0].keys()) if file_list else ["File Name", "Directory Path", "File Path", "File Size (bytes)", "Last Modified", "Duplicate Group", "Delete"] # Remove "Keep"
         sheet.append(header)
 
         # Write data rows
@@ -205,8 +204,8 @@ def delete_marked_files(excel_file):
     error_count = 0
 
     for row_index in tqdm(range(2, sheet.max_row + 1), desc="Deleting Files", disable=True): #disable tqdm on web
-        file_path = sheet.cell(row=row_index, column=3).value  # Use the File Path column(column 3)
-        delete_flag = sheet.cell(row=row_index, column=8).value  # Check the Delete column
+        file_path = sheet.cell(row=row_index, column=3).value  # Use the File Path column(colum 3)
+        delete_flag = sheet.cell(row=row_index, column=7).value  # Check the Delete column change to 7
 
         if delete_flag and delete_flag.lower() == "yes":
             try:
@@ -252,10 +251,9 @@ def list_files():
 
 @app.route('/update_file', methods=['POST'])
 def update_file():
-    """Updates the 'Keep' or 'Delete' status of a file in the Excel file."""
+    """Updates the 'Delete' status of a file in the Excel file."""
     data = request.get_json()
     file_path = data.get('filePath')
-    keep_value = data.get('keep')
     delete_value = data.get('delete')
 
     # Get the existing file list
@@ -264,22 +262,47 @@ def update_file():
     # Find the file in the list
     for file_data in file_list:
         if file_data["File Path"] == file_path:
-            # Update the Keep and Delete values
-            if keep_value is not None:
-                file_data["Keep"] = keep_value
-            if delete_value is not None:
-                file_data["Delete"] = delete_value
+            # Update the Delete value
+            file_data["Delete"] = delete_value
             break
 
     # Save the updated file list back to the Excel file
     save_file_list_to_excel(EXCEL_FILE, file_list)
 
-    return jsonify({"status": "success", "message": f"Updated {file_path} with Keep={keep_value} and Delete={delete_value}"})
+    # Re-evaluate group statuses
+    group_statuses = get_group_statuses(file_list)
 
+    return jsonify({"status": "success", "message": f"Updated {file_path} with Delete={delete_value}", "group_statuses": group_statuses})
+
+
+def get_group_statuses(file_list):
+    """Calculates and returns group statuses based on the file list."""
+    duplicate_groups = {}
+    for file_data in file_list:
+        group_number = file_data.get('Duplicate Group')
+        if group_number:
+            if group_number not in duplicate_groups:
+                duplicate_groups[group_number] = []
+            duplicate_groups[group_number].append(file_data)
+
+    group_statuses = {}
+    for group_number, files in duplicate_groups.items():
+        num_not_deleted = sum(1 for file_data in files if file_data["Delete"].lower() != "yes")
+
+        if len(files) == 1:  # If only one file
+            group_statuses[group_number] = "Only 1 file"  # Report as only 1 file
+        elif num_not_deleted == 0:  # If there are multiple files, and ALL is on delete
+            group_statuses[group_number] = "All to be Deleted"  # Mark group to delete everything
+        elif num_not_deleted == 1:
+            group_statuses[group_number] = "Only 1 file"
+        else:
+            group_statuses[group_number] = "Multiple Duplicates"  # Mark as having multiple duplicates
+
+    return group_statuses
 
 @app.route('/apply_folder_priority', methods=['POST'])
 def apply_folder_priority():
-    """Applies folder priority rules."""
+    """Applies folder priority rules.  This version prioritizes folder and automatically sets Delete columns."""
     data = request.get_json()
     priority_folders = data.get('priorityFolders', [])
 
@@ -296,25 +319,28 @@ def apply_folder_priority():
             duplicate_groups[group_number].append(file_data)
 
     # Apply priority rules within each duplicate group
+    group_statuses = {}  # Store status of each group
     for group_number, files in duplicate_groups.items():
         # Sort files based on folder priority
         sorted_files = sorted(files, key=lambda x: (
-            priority_folders.index(x["Directory Path"]) if x["Directory Path"] in priority_folders else len(priority_folders), # If not in a high priority folder it will set Keep to 'No' and Delete to 'Yes'
+            priority_folders.index(x["Directory Path"]) if x["Directory Path"] in priority_folders else len(priority_folders), # Prioritize priority folder, or set lower
             x["File Path"]  # Secondary sort by filename (optional)
         ))
 
-        # Set "Keep" to "Yes" for the highest priority file in the group, and mark others for deletion
+        # Set "Delete" to "Yes" for lower priority
         for i, file_data in enumerate(sorted_files):
             if i == 0:
-                file_data["Keep"] = "Yes"
-                file_data["Delete"] = "No"  # Ensure the kept file is not marked for deletion
+                file_data["Delete"] = "No" # The first in priority is set to no delete
             else:
-                file_data["Keep"] = "No"
-                file_data["Delete"] = "Yes" # Mark others for deletion
+                file_data["Delete"] = "Yes"  # Mark lower-priority file for deletion
+
     # Save the updated file list back to the Excel file
     save_file_list_to_excel(EXCEL_FILE, file_list)
 
-    return jsonify({"status": "success", "message": "Folder priority applied successfully"})
+    # Re-evaluate group statuses
+    group_statuses = get_group_statuses(file_list)
+
+    return jsonify({"status": "success", "message": "Folder priority applied successfully", "group_statuses": group_statuses, "file_list":file_list})
 
 @app.route('/delete_files')
 def delete_files_route():

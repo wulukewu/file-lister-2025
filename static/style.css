@@ -32,6 +32,7 @@ h1 {
     margin-right: 10px;
 }
 
+/* Style for the draggable folder list */
 #folderList {
     border: 1px solid #ccc;
     padding: 5px;
@@ -43,4 +44,49 @@ h1 {
     background-color: #f9f9f9;
     border: 1px solid #ddd;
     cursor: move;
+}
+
+/* Style for duplicate group separators */
+.group-separator {
+    border-top: 2px solid #007bff; /* Blue color to match Bootstrap */
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+/* Highlight row for deletion */
+.delete-highlight {
+    background-color: #ffcccc; /* Light red */
+}
+
+/* Style for the unique files separator */
+.unique-separator {
+    border-top: 3px solid #28a745; /* Green color for differentiation */
+    margin-top: 15px;
+    padding-top: 15px;
+    font-weight: bold;
+}
+   /* Styles for the group status */
+.group-status {
+    font-weight: bold;
+    padding: 5px;
+    margin-bottom: 5px;
+    border-radius: 5px;
+}
+
+.group-status.multiple {
+    background-color: #ffcccc; /* Light red for multiple duplicates */
+}
+
+.group-status.single {
+    background-color: #ccffcc; /* Light green for single file */
+}
+
+.group-status.all-delete {
+    background-color: #ffffcc; /* Light yellow for all to delete */
+}
+/* Style to further separate groups */
+.extra-separator {
+    border-top: 5px solid #ff9800; /* A more noticeable orange color */
+    margin-top: 20px;
+    padding-top: 20px;
 }
