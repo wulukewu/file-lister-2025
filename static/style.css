@@ -38,6 +38,7 @@ h1 {
     padding: 5px;
     min-height: 50px;
 }
+
 #folderList .folderItem {
     padding: 5px;
     margin: 2px;
@@ -74,7 +75,7 @@ h1 {
 }
 
 .group-status.multiple {
-    background-color: #ffcccc; /* Light red for multiple duplicates */
+    background-color: #ffffcc; /* Light yellow for multiple duplicates */
 }
 
 .group-status.single {
@@ -82,7 +83,7 @@ h1 {
 }
 
 .group-status.all-delete {
-    background-color: #ffffcc; /* Light yellow for all to delete */
+    background-color: #ffcccc; /* Light red for all to delete */
 }
 /* Style to further separate groups */
 .extra-separator {

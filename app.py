@@ -17,7 +17,7 @@ def list_files_and_find_duplicates(root_dir, excel_file, similarity_threshold=5)
 
     workbook = openpyxl.Workbook()
     sheet = workbook.active
-    header = ["File Name", "Directory Path", "File Path", "File Size (bytes)", "Last Modified", "Duplicate Group", "Delete"] # Remove "Keep"
+    header = ["File Name", "Directory Path", "File Path", "File Size (bytes)", "Last Modified", "Duplicate Group", "Delete"]
     sheet.append(header)
 
     file_data = []  # Store file data before writing
@@ -271,9 +271,8 @@ def update_file():
 
     # Re-evaluate group statuses
     group_statuses = get_group_statuses(file_list)
-
-    return jsonify({"status": "success", "message": f"Updated {file_path} with Delete={delete_value}", "group_statuses": group_statuses})
-
+    # Return data for refresh
+    return jsonify({"status": "success", "message": f"Updated {file_path} with Delete={delete_value}",  "file_list":file_list,"group_statuses": group_statuses}) #update: new file with all set
 
 def get_group_statuses(file_list):
     """Calculates and returns group statuses based on the file list."""
@@ -337,10 +336,10 @@ def apply_folder_priority():
     # Save the updated file list back to the Excel file
     save_file_list_to_excel(EXCEL_FILE, file_list)
 
-    # Re-evaluate group statuses
+      # Re-evaluate group statuses and send back
     group_statuses = get_group_statuses(file_list)
 
-    return jsonify({"status": "success", "message": "Folder priority applied successfully", "group_statuses": group_statuses, "file_list":file_list})
+    return jsonify({"status": "success", "message": "Folder priority applied successfully",  "file_list":file_list,"group_statuses": group_statuses})
 
 @app.route('/delete_files')
 def delete_files_route():

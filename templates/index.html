@@ -139,7 +139,6 @@
                        console.log("Raw JSON response:", response); // add this line
                     if (response.status === 'success') {
                         fileList = response.file_list;
-                          console.log("fileList received by listFiles:", fileList); // Add this
                         populateTable(fileList);
                         populateFolderList(fileList); // Populate folder list
                     } else {
@@ -152,60 +151,49 @@
             });
         }
 
-        function populateTable(fileList) {
-              console.log("fileList received by populateTable:", fileList); // Add this
-            const tableBody = $('#fileTableBody');
-            tableBody.empty();
+      function populateTable(fileList) {
+          const tableBody = $('#fileTableBody');
+          tableBody.empty();
 
-            let currentGroup = null;
-            let uniqueSeparatorAdded = false; // Flag to track if the unique separator was added
-            let extraSeparator = false;
+          let currentGroup = null;
+          let uniqueSeparatorAdded = false;
 
-            fileList.forEach(function (file, index) {
-                // Add a group separator if the group changes
-                if (file["Duplicate Group"] !== null && file["Duplicate Group"] !== currentGroup) {
-
-
-                    const groupStatus = groupStatuses[file["Duplicate Group"]] || "Multiple Duplicates"; //Get group status
-
-                    const separatorRow = `
-                    <tr class="group-separator">
-                        <td colspan="7">
-                            Duplicate Group ${file["Duplicate Group"]} -
-                             <span class="group-status ${getGroupStatusClass(groupStatus)}">${groupStatus}</span>
-                        </td>
-                    </tr>`;
-                     console.log("Generated separatorRow:", separatorRow); // Add this
-                    tableBody.append(separatorRow);
-                    currentGroup = file["Duplicate Group"];
-                    extraSeparator = true;
-                }
-
-                 // Add a separator row before unique files
-                 if (file["Duplicate Group"] === null && !uniqueSeparatorAdded) {
-                    const uniqueSeparatorRow = `<tr class="unique-separator"><td colspan="7">Unique Files</td></tr>`;
-                    console.log("Generated uniqueSeparatorRow:", uniqueSeparatorRow); // Add this
-                    tableBody.append(uniqueSeparatorRow);
-                    uniqueSeparatorAdded = true;
-                }
-            console.log("Processing file:", file); // Add this
-                const row = `
-                    <tr class="${file["Delete"] === "Yes" ? "delete-highlight" : ""}">
-                        <td>${file["File Name"]}</td>
-                        <td>${file["Directory Path"]}</td>
-                        <td><img src="/get_image/${file["File Path"]}" alt="Preview" style="width: 50px; height: 50px;"></td>
-                        <td>${file["File Size (bytes)"]}</td>
-                        <td>${file["Last Modified"]}</td>
-                        <td>${file["Duplicate Group"] || ''}</td>
-                        <td>
-                            <input type="checkbox" id="delete-${index}" ${file["Delete"] === "Yes" ? "checked" : ""} onchange="updateFile('${file["File Path"]}')">
-                        </td>
-                    </tr>
-                `;
-                console.log("Generated row:", row); // Add this
-                tableBody.append(row);
-            });
-        }
+          fileList.forEach(function (file, index) {
+              //Group and check what's needed to separate it
+              if (file["Duplicate Group"] !== null && file["Duplicate Group"] !== currentGroup) {
+                  const groupStatus = groupStatuses[file["Duplicate Group"]] || "Multiple Duplicates";
+                  const separatorRow = `
+                      <tr class="group-separator">
+                          <td colspan="7">
+                              Duplicate Group ${file["Duplicate Group"]} -
+                              <span class="group-status ${getGroupStatusClass(groupStatus)}">${groupStatus}</span>
+                          </td>
+                      </tr>`;
+                  tableBody.append(separatorRow);
+                  currentGroup = file["Duplicate Group"];
+              }
+              //If duplicate has been run, it will not have it
+              if (file["Duplicate Group"] === null && !uniqueSeparatorAdded) {
+                  const uniqueSeparatorRow = `<tr class="unique-separator"><td colspan="7">Unique Files</td></tr>`;
+                  tableBody.append(uniqueSeparatorRow);
+                  uniqueSeparatorAdded = true;
+              }
+              //This creates the checkbook, remember 2 different quote
+              const row = `
+                  <tr class="${file["Delete"] === "Yes" ? "delete-highlight" : ""}">
+                      <td>${file["File Name"]}</td>
+                      <td>${file["Directory Path"]}</td>
+                      <td><img src="/get_image/${file["File Path"]}" alt="Preview" style="width: 50px; height: 50px;"></td>
+                      <td>${file["File Size (bytes)"]}</td>
+                      <td>${file["Last Modified"]}</td>
+                      <td>${file["Duplicate Group"] || ''}</td>
+                      <td>
+                          <input type="checkbox" id="delete-${index}" ${file["Delete"] === "Yes" ? "checked" : ""} onchange="updateFile('${file["File Path"]}')">
+                      </td>
+                  </tr>`;
+              tableBody.append(row);
+          });
+      }
           function getGroupStatusClass(status) {
             switch (status) {
                 case "Multiple Duplicates":
@@ -228,19 +216,13 @@
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({ filePath: filePath, delete: deleteValue }),
-                success: function (response) {
-                    console.log(response.message);
-                    // Toggle highlight class on the row
-                    if (deleteValue === "Yes") {
-                        row.addClass('delete-highlight');
-                    } else {
-                        row.removeClass('delete-highlight');
-                    }
+                  success: function (response) {
+                       console.log("Update SUCCESS JSON response:", response);
+                     groupStatuses = response.group_statuses;
+                      fileList = response.file_list
+                    populateTable(fileList);
 
-                    // Update group statuses and re-render the table
-
-                    listFiles();
-                },
+                  },
                 error: function (error) {
                     console.error('Error updating file:', error);
                 }
@@ -274,10 +256,12 @@
               type: 'POST',
               contentType: 'application/json',
               data: JSON.stringify({ priorityFolders: priorityFolders }),
-              success: function (response) {
-                  alert(response.message);
+                  success: function (response) {
+                       console.log("applyFolderPriority SUCCESS JSON response:", response);
+                   groupStatuses = response.group_statuses;
+                    fileList = response.file_list
+                       populateTable(fileList);
 
-                    listFiles();
               },
               error: function (error) {
                   console.error('Error applying folder priority:', error);
